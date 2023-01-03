@@ -1,6 +1,6 @@
 import argparse
 import zipfile
-
+import os
 
 def leven_func(str1, str2):
     # Минимизируем использование памяти
@@ -33,19 +33,20 @@ def parsing():
     return arguments
 
 
-def comparison():
+def comparison(arch):
     args = parsing()
-    arch = zipfile.ZipFile('plagiat.zip', 'r')
-
-    inp = open(f'{args.input_path}', 'r')
-    outp = open(f'{args.output_path}', 'w')
+    print("Checking files..")
+    try:
+        inp = open(f'{args.input_path}', 'r')
+        outp = open(f'{args.output_path}', 'w')
+    except FileNotFoundError:
+        print("One of the files is missing!")
 
     for line in inp.readlines():
         if '\n' in line:
             str1, str2 = line[:-1].split()
         else:
             str1, str2 = line.split()
-        print("Checking files..")
 
         try:
             print("File association: \n", str1, str2, '\n')
@@ -53,7 +54,7 @@ def comparison():
             str2 = arch.open(str2).read().decode()
             outp.write(str(leven_func(str1, str2)) + '\n')
         except KeyError:
-            print("One of the files is missing!")
+            print("File parsing problem!")
 
     arch.close()
     inp.close()
@@ -61,10 +62,16 @@ def comparison():
 
 
 def main():
-    comparison()
-    print("")
+    answ = input("Do you want to test Levenshtein's function? (y/n)\n")
+    if(answ == 'y' or answ == 'Y'):
+        ts1, ts2 = "котик", "жмотик"
+        print("Test strings:", ts1, ' | ', ts2, "\nCoefficient: ", leven_func(ts1, ts2), "\n")
 
-ts1, ts2 = "котик", "жмотик"
-print("Levenshtein's function testing:\nTest strings: ", ts1, ' ', ts2, "\nCoefficient: ", leven_func(ts1, ts2), "\n")
-print("Launching the main program.")
+    print("Launching the main program..\n")
+    arch_file = zipfile.ZipFile('plagiat.zip', 'r')
+    comparison(arch_file)
+    print("The analysis is completed, the data is displayed in the file scores.txt")
+    os.startfile('scores.txt')
+
+
 main()
