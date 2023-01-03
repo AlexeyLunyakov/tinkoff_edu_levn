@@ -1,6 +1,9 @@
 import argparse
 import zipfile
+import ast
+import re
 import os
+
 
 def leven_func(str1, str2):
     # Минимизируем использование памяти
@@ -24,7 +27,7 @@ def leven_func(str1, str2):
     return round(1 - curr_row[len(str1)]/max(len(str1), len(str2)), 3)
 
 
-def parsing():
+def inp_parsing():
     parser = argparse.ArgumentParser(prog='Anti-plagiarism', description='Comparison of two files')
     parser.add_argument("input_path", type=str, help='Input dir for text input')
     parser.add_argument("output_path", type=str, help='Output dir for text scores')
@@ -33,8 +36,9 @@ def parsing():
     return arguments
 
 
-def comparison(arch):
-    args = parsing()
+def comparison(arch, flag):
+    global outp
+    args = inp_parsing()
     print("Checking files..")
     try:
         inp = open(f'{args.input_path}', 'r')
@@ -52,13 +56,31 @@ def comparison(arch):
             print("File association: \n", str1, str2, '\n')
             str1 = arch.open(str1).read().decode()
             str2 = arch.open(str2).read().decode()
-            outp.write(str(leven_func(str1, str2)) + '\n')
+            if (flag != 0):
+                str1 = normalization(str1)
+                str2 = normalization(str2)
+                outp.write(str(leven_func(str1, str2)) + '\n')
+            else:
+                outp.write(str(leven_func(str1, str2)) + '\n')
         except KeyError:
             print("File parsing problem!")
 
     arch.close()
     inp.close()
     outp.close()
+
+
+def normalization(tmp_str):
+    ast_str = ast.parse(tmp_str)
+    # Нормализация названий переменных
+    for node in ast.walk(ast_str):
+        if isinstance(node, ast.Name):
+            node.id = 'x'
+    new_str = ast.unparse(ast_str)
+    new_str = re.sub('#.*', '', new_str, len(tmp_str))
+    new_str = re.sub("'''.*'''", '', new_str, len(tmp_str))
+
+    return new_str
 
 
 def main():
@@ -69,7 +91,10 @@ def main():
 
     print("Launching the main program..\n")
     arch_file = zipfile.ZipFile('plagiat.zip', 'r')
-    comparison(arch_file)
+
+    flag = int(input("Do you want to normalize texts? (0/1)\n"))
+    comparison(arch_file, flag)
+
     print("The analysis is completed, the data is displayed in the file scores.txt")
     os.startfile('scores.txt')
 
